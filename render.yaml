@@ -1,0 +1,63 @@
+# Render.com Blueprint Configuration
+# Deploy by: New Project → Blueprint → Connect GitHub → Select this repo
+
+services:
+  # API Service
+  - type: web
+    name: vehicle-appraisal-api
+    env: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: .
+    dockerCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT --workers 2
+    plan: free  # Free tier - services spin down after 15 min inactivity
+    envVars:
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: SUPABASE_STORAGE_BUCKET
+        value: appraisal-artifacts
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: OPENAI_VISION_MODEL
+        value: gpt-4o-mini
+      - key: OPENAI_TEXT_MODEL
+        value: gpt-4o-mini
+      - key: OPENAI_REQUEST_TIMEOUT_SECONDS
+        value: "120"  # Increased for Render free tier (slower performance)
+      - key: ENABLE_RAG
+        value: "true"
+      - key: AGENT_MAX_ITERATIONS
+        value: "50"
+      - key: AGENT_EXECUTION_TIMEOUT_SECONDS
+        value: "300"
+      - key: PORT
+        value: "10000"  # Render sets this automatically, but we set default
+      - key: SIGNED_URL_EXPIRATION
+        value: "3600"  # 1 hour for signed URLs (Render services may spin down)
+      - key: ENVIRONMENT
+        value: "production"
+      - key: CORS_ORIGINS
+        fromService:
+          type: web
+          name: vehicle-appraisal-ui
+          property: host
+    healthCheckPath: /healthz
+
+  # UI Service
+  - type: web
+    name: vehicle-appraisal-ui
+    env: docker
+    dockerfilePath: ./frontend/Dockerfile
+    dockerContext: .
+    plan: free
+    envVars:
+      - key: API_BASE_URL
+        fromService:
+          type: web
+          name: vehicle-appraisal-api
+          property: host
+      - key: API_TIMEOUT_SECONDS
+        value: "60"  # Increased timeout for Render free tier
+      - key: PORT
+        value: "10000"  # Render sets this automatically

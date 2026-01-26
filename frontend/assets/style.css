@@ -1,0 +1,96 @@
+/* Vehicle Appraisal Pre-Check - Custom Styles */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+:root {
+    --primary-dark: #0d1b2a;
+    --primary-blue: #0066cc;
+    --primary-light: #f5f7fa;
+    --white: #ffffff;
+    --text-dark: #2c3e50;
+    --text-light: #6c757d;
+    --success: #28a745;
+    --warning: #ffc107;
+    --error: #dc3545;
+    --info: #17a2b8;
+}
+
+* {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif !important;
+}
+
+#MainMenu { visibility: hidden; }
+footer { visibility: hidden; }
+header { visibility: hidden; }
+
+.autograb-header {
+    background-color: var(--white);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    padding: 16px 32px;
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    margin-bottom: 24px;
+}
+
+.autograb-header-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.autograb-logo {
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--primary-dark);
+}
+
+.autograb-hero {
+    text-align: center;
+    padding: 48px 24px;
+    background: linear-gradient(135deg, #f5f7fa 0%, #e9ecef 100%);
+    border-radius: 12px;
+    margin-bottom: 48px;
+}
+
+.autograb-hero h1 {
+    font-size: 40px;
+    font-weight: 700;
+    color: var(--primary-dark);
+    margin-bottom: 16px;
+}
+
+.autograb-hero-subtitle {
+    font-size: 18px;
+    color: var(--text-light);
+    line-height: 1.6;
+    margin-bottom: 32px;
+}
+
+.autograb-feature-card {
+    background: white;
+    padding: 24px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    text-align: center;
+    margin-bottom: 16px;
+}
+
+.autograb-feature-icon {
+    font-size: 48px;
+    margin-bottom: 12px;
+}
+
+.autograb-feature-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text-dark);
+    margin-bottom: 8px;
+}
+
+.autograb-feature-description {
+    font-size: 14px;
+    color: var(--text-light);
+    line-height: 1.5;
+}

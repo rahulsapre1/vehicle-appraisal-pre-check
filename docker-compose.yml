@@ -1,0 +1,75 @@
+services:
+  api:
+    build:
+      context: .
+      dockerfile: ./backend/Dockerfile
+    env_file:
+      - ./backend/.env
+    environment:
+      - ENABLE_RAG=true
+    ports:
+      - "8001:8000"
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+    volumes:
+      # Volume mounts for hot-reload during development
+      - ./backend/app:/app/app
+      - ./shared:/app/shared
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/healthz"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    restart: unless-stopped
+    networks:
+      - appraisal-network
+
+  ui:
+    build:
+      context: .
+      dockerfile: ./frontend/Dockerfile
+    env_file:
+      - ./frontend/.env
+    ports:
+      - "8502:8501"
+    volumes:
+      # Volume mount for hot-reload during development
+      - ./frontend:/app
+    depends_on:
+      api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8501/_stcore/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    restart: unless-stopped
+    networks:
+      - appraisal-network
+
+  mcp:
+    build:
+      context: .
+      dockerfile: ./apps/mcp/Dockerfile
+    environment:
+      - API_BASE_URL=http://api:8000
+    volumes:
+      # Volume mount for hot-reload during development
+      - ./apps/mcp:/app
+    depends_on:
+      api:
+        condition: service_healthy
+    # MCP server uses stdio transport and exits when no client is connected
+    # It's configured with profiles so it doesn't run by default
+    profiles:
+      - mcp
+    # MCP server uses stdio transport, so no ports needed
+    # It communicates via stdin/stdout with MCP clients (like Claude Desktop)
+    restart: "no"
+    networks:
+      - appraisal-network
+
+networks:
+  appraisal-network:
+    driver: bridge
