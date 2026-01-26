@@ -42,6 +42,7 @@ services:
           type: web
           name: vehicle-appraisal-ui
           property: host
+      # PORT is automatically set by Render
     healthCheckPath: /healthz
 
   # UI Service
@@ -59,5 +60,4 @@ services:
           property: host
       - key: API_TIMEOUT_SECONDS
         value: "60"  # Increased timeout for Render free tier
-      - key: PORT
-        value: "10000"  # Render sets this automatically
+      # PORT is automatically set by Render
