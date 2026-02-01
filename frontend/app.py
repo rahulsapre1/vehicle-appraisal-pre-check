@@ -89,20 +89,38 @@ def call_api(method: str, endpoint: str, **kwargs) -> tuple[bool, Any]:
         if resp.status_code < 400:
             return True, resp.json()
         else:
+            # Handle specific server error codes (service unavailable/starting up)
+            if resp.status_code in [502, 503, 504]:
+                return False, {
+                    "error": "The API service is starting up. Please wait 30-60 seconds and try again. (Render free tier services spin down after inactivity)",
+                    "status_code": resp.status_code,
+                    "is_startup": True
+                }
+            
+            # Handle rate limiting
+            if resp.status_code == 429:
+                return False, {
+                    "error": "Too many requests. Please wait a few seconds and try again.",
+                    "status_code": resp.status_code
+                }
+            
             # Try to parse JSON error response, fallback to text
             try:
                 error_data = resp.json()
                 error_message = error_data.get("error", resp.text)
             except (ValueError, KeyError):
                 error_message = resp.text
+                # Clean up HTML responses (e.g., from proxy errors)
+                if error_message.startswith("<!DOCTYPE") or error_message.startswith("<html"):
+                    error_message = f"Server error ({resp.status_code}). Please try again."
             return False, {"error": error_message, "status_code": resp.status_code}
     except requests.exceptions.Timeout:
-        return False, {"error": f"Request timeout after {api_timeout}s. The API may be starting up. Please try again."}
+        return False, {"error": f"Request timeout after {api_timeout}s. The API may be starting up. Please wait 30-60 seconds and try again."}
     except requests.exceptions.ConnectionError as e:
         error_msg = str(e)
         if "Name or service not known" in error_msg or "Failed to resolve" in error_msg:
             return False, {"error": f"Cannot connect to API at {url}. Please check API_BASE_URL is set correctly."}
-        return False, {"error": f"Connection error: {error_msg}"}
+        return False, {"error": f"Connection error: The API may be starting up. Please wait 30-60 seconds and try again."}
     except Exception as e:
         return False, {"error": str(e)}
 
