@@ -222,7 +222,22 @@ async def create_appraisal_only(
 
     supabase = get_supabase_client()
     appraisal_id = new_uuid()
-    short_id = generate_short_id_from_db(supabase)
+    
+    # Generate short_id with proper error handling
+    try:
+        short_id = generate_short_id_from_db(supabase)
+    except Exception as e:
+        # If short_id generation fails completely, return a helpful error
+        error_msg = str(e).lower()
+        if '429' in error_msg or 'rate limit' in error_msg or 'too many requests' in error_msg:
+            return JSONResponse(
+                status_code=429,
+                content={"error": "Too Many Requests - Database is temporarily rate-limited. Please try again in a few seconds."}
+            )
+        return JSONResponse(
+            status_code=500,
+            content={"error": f"Failed to generate appraisal ID: {str(e)}"}
+        )
 
     # Create appraisal record
     try:
@@ -242,6 +257,15 @@ async def create_appraisal_only(
         if not getattr(insert, "data", None):
             return JSONResponse(status_code=500, content={"error": "Failed to create appraisal"})
     except APIError as e:
+        # Check for rate limit errors in the insert operation
+        error_message = str(e).lower()
+        status_code = getattr(e, 'code', None) or getattr(e, 'status_code', None)
+        
+        if status_code == 429 or '429' in str(e) or 'rate limit' in error_message or 'too many requests' in error_message:
+            return JSONResponse(
+                status_code=429,
+                content={"error": "Too Many Requests - Database is temporarily rate-limited. Please try again in a few seconds."}
+            )
         return JSONResponse(status_code=500, content={"error": f"DB error creating appraisal: {e.message}"})
 
     return JSONResponse(status_code=201, content={"id": short_id, "uuid": appraisal_id})
@@ -356,7 +380,22 @@ async def create_appraisal(
 
     supabase = get_supabase_client()
     appraisal_id = new_uuid()
-    short_id = generate_short_id_from_db(supabase)
+    
+    # Generate short_id with proper error handling
+    try:
+        short_id = generate_short_id_from_db(supabase)
+    except Exception as e:
+        # If short_id generation fails completely, return a helpful error
+        error_msg = str(e).lower()
+        if '429' in error_msg or 'rate limit' in error_msg or 'too many requests' in error_msg:
+            return JSONResponse(
+                status_code=429,
+                content={"error": "Too Many Requests - Database is temporarily rate-limited. Please try again in a few seconds."}
+            )
+        return JSONResponse(
+            status_code=500,
+            content={"error": f"Failed to generate appraisal ID: {str(e)}"}
+        )
 
     # Create appraisal record
     try:
@@ -376,6 +415,15 @@ async def create_appraisal(
         if not getattr(insert, "data", None):
             return JSONResponse(status_code=500, content={"error": "Failed to create appraisal"})
     except APIError as e:
+        # Check for rate limit errors in the insert operation
+        error_message = str(e).lower()
+        status_code = getattr(e, 'code', None) or getattr(e, 'status_code', None)
+        
+        if status_code == 429 or '429' in str(e) or 'rate limit' in error_message or 'too many requests' in error_message:
+            return JSONResponse(
+                status_code=429,
+                content={"error": "Too Many Requests - Database is temporarily rate-limited. Please try again in a few seconds."}
+            )
         return JSONResponse(status_code=500, content={"error": f"DB error creating appraisal: {e.message}"})
 
     # Upload artifacts in parallel

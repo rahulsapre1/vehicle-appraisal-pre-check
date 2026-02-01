@@ -89,7 +89,13 @@ def call_api(method: str, endpoint: str, **kwargs) -> tuple[bool, Any]:
         if resp.status_code < 400:
             return True, resp.json()
         else:
-            return False, {"error": resp.text, "status_code": resp.status_code}
+            # Try to parse JSON error response, fallback to text
+            try:
+                error_data = resp.json()
+                error_message = error_data.get("error", resp.text)
+            except (ValueError, KeyError):
+                error_message = resp.text
+            return False, {"error": error_message, "status_code": resp.status_code}
     except requests.exceptions.Timeout:
         return False, {"error": f"Request timeout after {api_timeout}s. The API may be starting up. Please try again."}
     except requests.exceptions.ConnectionError as e:

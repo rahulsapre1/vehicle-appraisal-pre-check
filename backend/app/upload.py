@@ -131,15 +131,61 @@ def generate_short_id_from_db(supabase) -> str:
     """
     Generate a unique 4-character short ID using PostgreSQL function.
     Falls back to client-side generation if DB call fails.
-    """
-    try:
-        result = supabase.rpc("generate_short_id").execute()
-        if result.data:
-            return result.data
-    except Exception:
-        pass
     
-    # Fallback: client-side generation (less reliable but works)
+    Handles rate limit errors (429) by retrying with exponential backoff,
+    then falling back to client-side generation if all retries fail.
+    """
+    import time
     import random
+    from postgrest.exceptions import APIError
+    
+    max_retries = 3
+    base_delay = 0.5  # Start with 500ms
+    
+    for attempt in range(max_retries):
+        try:
+            result = supabase.rpc("generate_short_id").execute()
+            if result.data:
+                return result.data
+        except APIError as e:
+            # Check if it's a rate limit error (429)
+            error_message = str(e).lower()
+            status_code = getattr(e, 'code', None) or getattr(e, 'status_code', None)
+            
+            # Check for rate limit indicators
+            is_rate_limit = (
+                status_code == 429 or
+                '429' in str(e) or
+                'rate limit' in error_message or
+                'too many requests' in error_message
+            )
+            
+            if is_rate_limit and attempt < max_retries - 1:
+                # Exponential backoff: 0.5s, 1s, 2s
+                delay = base_delay * (2 ** attempt)
+                time.sleep(delay)
+                continue
+            else:
+                # Not a rate limit or final attempt - fall through to fallback
+                break
+        except Exception:
+            # Any other error - fall through to fallback
+            break
+    
+    # Fallback: client-side generation with uniqueness check
     chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
+    max_fallback_attempts = 50
+    
+    for _ in range(max_fallback_attempts):
+        short_id = ''.join(random.choice(chars) for _ in range(4))
+        # Check if this ID already exists in the database
+        try:
+            check = supabase.table("appraisals").select("short_id").eq("short_id", short_id).limit(1).execute()
+            if not check.data:
+                return short_id
+        except Exception:
+            # If check fails, just return the generated ID (collision risk is low)
+            return short_id
+    
+    # Last resort: return a random ID (very low collision probability)
     return ''.join(random.choice(chars) for _ in range(4))
